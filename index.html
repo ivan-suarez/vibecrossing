@@ -11,7 +11,26 @@
         <div id="ui-overlay">
             <div id="instructions">
                 <p>Use WASD or Arrow Keys to move</p>
-                <p>Click to interact</p>
+                <p>Press E to interact | Press I for inventory</p>
+            </div>
+            <div id="money-display">0 bells</div>
+            <div id="interaction-prompt"></div>
+            <div id="notification"></div>
+            
+            <div id="inventory-panel" class="panel">
+                <div class="panel-header">
+                    <h2>Inventory</h2>
+                    <button class="close-button" onclick="document.getElementById('inventory-panel').style.display='none'">×</button>
+                </div>
+                <div id="inventory-list" class="panel-content"></div>
+            </div>
+
+            <div id="shop-panel" class="panel">
+                <div class="panel-header">
+                    <h2>Shop</h2>
+                    <button class="close-button" onclick="document.getElementById('shop-panel').style.display='none'">×</button>
+                </div>
+                <div id="shop-list" class="panel-content"></div>
             </div>
         </div>
         <canvas id="game-canvas"></canvas>

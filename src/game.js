@@ -11,6 +11,13 @@ export class Game {
         this.clock = new THREE.Clock();
         this.moveSpeed = 5;
         this.rotationSpeed = 0.1;
+        this.inventory = [];
+        this.money = 0;
+        this.flowers = [];
+        this.shop = null;
+        this.interactionDistance = 2.5;
+        this.nearbyFlower = null;
+        this.nearShop = false;
     }
 
     init() {
@@ -46,8 +53,17 @@ export class Game {
         // Setup controls
         this.setupControls();
 
+        // Setup UI
+        this.setupUI();
+
         // Handle window resize
         window.addEventListener('resize', () => this.onWindowResize());
+    }
+
+    setupUI() {
+        // Initialize inventory UI
+        this.updateInventoryUI();
+        this.updateMoneyUI();
     }
 
     setupLighting() {
@@ -98,6 +114,13 @@ export class Game {
         this.createFlower(3, 0, -3);
         this.createFlower(-2, 0, 2);
         this.createFlower(2, 0, -2);
+        this.createFlower(-4, 0, 4);
+        this.createFlower(4, 0, -4);
+        this.createFlower(-1, 0, 1);
+        this.createFlower(1, 0, -1);
+
+        // Create shop
+        this.createShop(-10, 0, 0);
     }
 
     createTree(x, y, z) {
@@ -157,7 +180,10 @@ export class Game {
 
         // Flower petals
         const petalColors = [0xFF69B4, 0xFFB6C1, 0xFFD700, 0xFF6347];
-        const petalColor = petalColors[Math.floor(Math.random() * petalColors.length)];
+        const colorNames = ['Pink', 'Light Pink', 'Gold', 'Tomato'];
+        const colorIndex = Math.floor(Math.random() * petalColors.length);
+        const petalColor = petalColors[colorIndex];
+        const colorName = colorNames[colorIndex];
         const petalMaterial = new THREE.MeshStandardMaterial({ color: petalColor });
 
         for (let i = 0; i < 5; i++) {
@@ -183,7 +209,89 @@ export class Game {
         flowerGroup.add(center);
 
         flowerGroup.position.set(x, y, z);
+        
+        // Store flower data for interaction
+        flowerGroup.userData = {
+            type: 'flower',
+            color: colorName,
+            colorValue: petalColor,
+            pickable: true
+        };
+        
+        this.flowers.push(flowerGroup);
         this.scene.add(flowerGroup);
+    }
+
+    createShop(x, y, z) {
+        const shopGroup = new THREE.Group();
+
+        // Shop base
+        const baseGeometry = new THREE.BoxGeometry(3, 0.2, 3);
+        const baseMaterial = new THREE.MeshStandardMaterial({ color: 0x8B4513 });
+        const base = new THREE.Mesh(baseGeometry, baseMaterial);
+        base.position.y = 0.1;
+        base.receiveShadow = true;
+        shopGroup.add(base);
+
+        // Shop walls
+        const wallMaterial = new THREE.MeshStandardMaterial({ color: 0xFFD700 });
+        
+        // Front wall
+        const frontWall = new THREE.Mesh(
+            new THREE.BoxGeometry(3, 2, 0.2),
+            wallMaterial
+        );
+        frontWall.position.set(0, 1.1, 1.4);
+        frontWall.castShadow = true;
+        shopGroup.add(frontWall);
+
+        // Back wall
+        const backWall = new THREE.Mesh(
+            new THREE.BoxGeometry(3, 2, 0.2),
+            wallMaterial
+        );
+        backWall.position.set(0, 1.1, -1.4);
+        backWall.castShadow = true;
+        shopGroup.add(backWall);
+
+        // Left wall
+        const leftWall = new THREE.Mesh(
+            new THREE.BoxGeometry(0.2, 2, 3),
+            wallMaterial
+        );
+        leftWall.position.set(-1.4, 1.1, 0);
+        leftWall.castShadow = true;
+        shopGroup.add(leftWall);
+
+        // Right wall
+        const rightWall = new THREE.Mesh(
+            new THREE.BoxGeometry(0.2, 2, 3),
+            wallMaterial
+        );
+        rightWall.position.set(1.4, 1.1, 0);
+        rightWall.castShadow = true;
+        shopGroup.add(rightWall);
+
+        // Roof
+        const roofGeometry = new THREE.ConeGeometry(2.5, 1.5, 4);
+        const roofMaterial = new THREE.MeshStandardMaterial({ color: 0x8B0000 });
+        const roof = new THREE.Mesh(roofGeometry, roofMaterial);
+        roof.position.y = 2.5;
+        roof.rotation.y = Math.PI / 4;
+        roof.castShadow = true;
+        shopGroup.add(roof);
+
+        // Shop sign
+        const signGeometry = new THREE.BoxGeometry(1, 0.3, 0.1);
+        const signMaterial = new THREE.MeshStandardMaterial({ color: 0xFFFFFF });
+        const sign = new THREE.Mesh(signGeometry, signMaterial);
+        sign.position.set(0, 2.2, 1.5);
+        shopGroup.add(sign);
+
+        shopGroup.position.set(x, y, z);
+        shopGroup.userData = { type: 'shop' };
+        this.shop = shopGroup;
+        this.scene.add(shopGroup);
     }
 
     createPlayer() {
@@ -226,11 +334,211 @@ export class Game {
         // Keyboard controls
         document.addEventListener('keydown', (event) => {
             this.keys[event.code] = true;
+            
+            // Interaction key (E)
+            if (event.code === 'KeyE') {
+                this.handleInteraction();
+            }
+            
+            // Toggle inventory (I)
+            if (event.code === 'KeyI') {
+                this.toggleInventory();
+            }
         });
 
         document.addEventListener('keyup', (event) => {
             this.keys[event.code] = false;
         });
+    }
+
+    handleInteraction() {
+        // Pick up nearby flower
+        if (this.nearbyFlower) {
+            this.pickupFlower(this.nearbyFlower);
+        }
+        
+        // Open shop
+        if (this.nearShop) {
+            this.toggleShop();
+        }
+    }
+
+    pickupFlower(flower) {
+        // Remove from scene
+        this.scene.remove(flower);
+        
+        // Remove from flowers array
+        const index = this.flowers.indexOf(flower);
+        if (index > -1) {
+            this.flowers.splice(index, 1);
+        }
+        
+        // Add to inventory
+        const item = {
+            type: 'flower',
+            name: `${flower.userData.color} Flower`,
+            color: flower.userData.color,
+            colorValue: flower.userData.colorValue,
+            sellPrice: 10
+        };
+        this.inventory.push(item);
+        
+        // Update UI
+        this.updateInventoryUI();
+        this.showNotification(`Picked up ${item.name}!`);
+        
+        this.nearbyFlower = null;
+    }
+
+    sellItem(itemIndex) {
+        if (itemIndex >= 0 && itemIndex < this.inventory.length) {
+            const item = this.inventory[itemIndex];
+            this.money += item.sellPrice;
+            this.inventory.splice(itemIndex, 1);
+            this.updateInventoryUI();
+            this.updateMoneyUI();
+            this.showNotification(`Sold ${item.name} for ${item.sellPrice} bells!`);
+        }
+    }
+
+    checkInteractions() {
+        if (!this.player) return;
+
+        const playerPos = this.player.position;
+        this.nearbyFlower = null;
+        this.nearShop = false;
+
+        // Check flowers
+        for (const flower of this.flowers) {
+            const distance = playerPos.distanceTo(flower.position);
+            if (distance < this.interactionDistance) {
+                this.nearbyFlower = flower;
+                break;
+            }
+        }
+
+        // Check shop
+        if (this.shop) {
+            const shopPos = this.shop.position;
+            const distance = playerPos.distanceTo(shopPos);
+            if (distance < this.interactionDistance + 2) {
+                this.nearShop = true;
+            }
+        }
+
+        // Update interaction prompt
+        this.updateInteractionPrompt();
+    }
+
+    updateInteractionPrompt() {
+        const prompt = document.getElementById('interaction-prompt');
+        if (!prompt) return;
+
+        if (this.nearbyFlower) {
+            prompt.textContent = 'Press E to pick up flower';
+            prompt.style.display = 'block';
+        } else if (this.nearShop) {
+            prompt.textContent = 'Press E to open shop';
+            prompt.style.display = 'block';
+        } else {
+            prompt.style.display = 'none';
+        }
+    }
+
+    toggleInventory() {
+        const inventoryPanel = document.getElementById('inventory-panel');
+        if (inventoryPanel) {
+            inventoryPanel.style.display = 
+                inventoryPanel.style.display === 'none' ? 'block' : 'none';
+        }
+    }
+
+    toggleShop() {
+        const shopPanel = document.getElementById('shop-panel');
+        if (shopPanel) {
+            shopPanel.style.display = 
+                shopPanel.style.display === 'none' ? 'block' : 'none';
+            this.updateShopUI();
+        }
+    }
+
+    updateInventoryUI() {
+        const inventoryList = document.getElementById('inventory-list');
+        if (!inventoryList) return;
+
+        inventoryList.innerHTML = '';
+        
+        if (this.inventory.length === 0) {
+            inventoryList.innerHTML = '<p style="color: #999; text-align: center; padding: 20px;">Inventory is empty</p>';
+            return;
+        }
+
+        this.inventory.forEach((item, index) => {
+            const itemDiv = document.createElement('div');
+            itemDiv.className = 'inventory-item';
+            itemDiv.innerHTML = `
+                <div class="item-icon" style="background-color: #${item.colorValue.toString(16).padStart(6, '0')}"></div>
+                <div class="item-info">
+                    <div class="item-name">${item.name}</div>
+                    <div class="item-price">${item.sellPrice} bells</div>
+                </div>
+            `;
+            inventoryList.appendChild(itemDiv);
+        });
+    }
+
+    updateShopUI() {
+        const shopList = document.getElementById('shop-list');
+        if (!shopList) return;
+
+        shopList.innerHTML = '';
+        
+        if (this.inventory.length === 0) {
+            shopList.innerHTML = '<p style="color: #999; text-align: center; padding: 20px;">No items to sell</p>';
+            return;
+        }
+
+        this.inventory.forEach((item, index) => {
+            const itemDiv = document.createElement('div');
+            itemDiv.className = 'shop-item';
+            itemDiv.innerHTML = `
+                <div class="item-icon" style="background-color: #${item.colorValue.toString(16).padStart(6, '0')}"></div>
+                <div class="item-info">
+                    <div class="item-name">${item.name}</div>
+                    <div class="item-price">${item.sellPrice} bells</div>
+                </div>
+                <button class="sell-button" data-index="${index}">Sell</button>
+            `;
+            
+            const sellButton = itemDiv.querySelector('.sell-button');
+            sellButton.addEventListener('click', () => {
+                if (this.nearShop) {
+                    this.sellItem(index);
+                } else {
+                    this.showNotification('You must be near the shop to sell!');
+                }
+            });
+            
+            shopList.appendChild(itemDiv);
+        });
+    }
+
+    updateMoneyUI() {
+        const moneyDisplay = document.getElementById('money-display');
+        if (moneyDisplay) {
+            moneyDisplay.textContent = `${this.money} bells`;
+        }
+    }
+
+    showNotification(message) {
+        const notification = document.getElementById('notification');
+        if (notification) {
+            notification.textContent = message;
+            notification.style.display = 'block';
+            setTimeout(() => {
+                notification.style.display = 'none';
+            }, 2000);
+        }
     }
 
     updatePlayer() {
@@ -282,6 +590,9 @@ export class Game {
         const targetPosition = this.player.position.clone().add(cameraOffset);
         this.camera.position.lerp(targetPosition, 0.1);
         this.camera.lookAt(this.player.position);
+
+        // Check for interactions
+        this.checkInteractions();
     }
 
     onWindowResize() {

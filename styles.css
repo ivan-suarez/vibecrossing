@@ -49,3 +49,157 @@ body {
     font-size: 14px;
 }
 
+#money-display {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background: rgba(255, 215, 0, 0.9);
+    padding: 10px 20px;
+    border-radius: 15px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    font-size: 18px;
+    font-weight: bold;
+    color: #4a4a4a;
+    pointer-events: auto;
+}
+
+#interaction-prompt {
+    position: absolute;
+    bottom: 100px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 12px 24px;
+    border-radius: 25px;
+    font-size: 16px;
+    display: none;
+    pointer-events: none;
+    z-index: 20;
+}
+
+#notification {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(76, 175, 80, 0.95);
+    color: white;
+    padding: 15px 30px;
+    border-radius: 15px;
+    font-size: 18px;
+    display: none;
+    pointer-events: none;
+    z-index: 30;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.panel {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 20px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+    width: 400px;
+    max-height: 600px;
+    display: none;
+    z-index: 100;
+    pointer-events: auto;
+}
+
+.panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    border-bottom: 2px solid #e0e0e0;
+}
+
+.panel-header h2 {
+    margin: 0;
+    color: #4a4a4a;
+    font-size: 24px;
+}
+
+.close-button {
+    background: none;
+    border: none;
+    font-size: 32px;
+    color: #999;
+    cursor: pointer;
+    padding: 0;
+    width: 32px;
+    height: 32px;
+    line-height: 1;
+    transition: color 0.2s;
+}
+
+.close-button:hover {
+    color: #333;
+}
+
+.panel-content {
+    padding: 20px;
+    max-height: 500px;
+    overflow-y: auto;
+}
+
+.inventory-item, .shop-item {
+    display: flex;
+    align-items: center;
+    padding: 12px;
+    margin-bottom: 10px;
+    background: #f5f5f5;
+    border-radius: 10px;
+    transition: background 0.2s;
+}
+
+.inventory-item:hover, .shop-item:hover {
+    background: #e8e8e8;
+}
+
+.item-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    margin-right: 12px;
+    border: 2px solid #ddd;
+}
+
+.item-info {
+    flex: 1;
+}
+
+.item-name {
+    font-weight: bold;
+    color: #333;
+    margin-bottom: 4px;
+}
+
+.item-price {
+    color: #666;
+    font-size: 14px;
+}
+
+.sell-button {
+    background: #4CAF50;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: bold;
+    transition: background 0.2s;
+}
+
+.sell-button:hover {
+    background: #45a049;
+}
+
+.sell-button:active {
+    transform: scale(0.95);
+}
+
