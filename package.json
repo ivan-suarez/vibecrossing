@@ -1,0 +1,21 @@
+{
+  "name": "vibecrossing",
+  "version": "1.0.0",
+  "description": "An Animal Crossing style game in the browser",
+  "main": "index.js",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "keywords": ["game", "three.js", "animal-crossing"],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "three": "^0.160.0"
+  },
+  "devDependencies": {
+    "vite": "^5.0.0"
+  }
+}
+
