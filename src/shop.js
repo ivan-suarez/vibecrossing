@@ -21,6 +21,12 @@ export class Shop {
                 name: 'Chair',
                 buyPrice: 30,
                 icon: '🪑'
+            },
+            {
+                type: 'fishing_rod',
+                name: 'Fishing Rod',
+                buyPrice: 10,
+                icon: '🎣'
             }
         ];
     }

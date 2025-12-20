@@ -381,5 +381,85 @@ export class World {
         this.scene.add(chairGroup);
         return chairGroup;
     }
+
+    createPond(x, y, z) {
+        const pondGroup = new THREE.Group();
+
+        // Pond base (hole in ground)
+        const pondGeometry = new THREE.CylinderGeometry(4, 4, 0.5, 32);
+        const pondMaterial = new THREE.MeshStandardMaterial({ 
+            color: 0x2E5090,
+            roughness: 0.1,
+            metalness: 0.3
+        });
+        const pondBase = new THREE.Mesh(pondGeometry, pondMaterial);
+        pondBase.position.y = 0.25;
+        pondBase.receiveShadow = true;
+        pondGroup.add(pondBase);
+
+        // Water surface
+        const waterGeometry = new THREE.CircleGeometry(4, 32);
+        const waterMaterial = new THREE.MeshStandardMaterial({ 
+            color: 0x4169E1,
+            transparent: true,
+            opacity: 0.7,
+            roughness: 0.1,
+            metalness: 0.5
+        });
+        const water = new THREE.Mesh(waterGeometry, waterMaterial);
+        water.rotation.x = -Math.PI / 2;
+        water.position.y = 0.5;
+        water.receiveShadow = true;
+        pondGroup.add(water);
+
+        pondGroup.position.set(x, y, z);
+        pondGroup.userData = { 
+            type: 'pond',
+            center: new THREE.Vector3(x, y, z),
+            radius: 4
+        };
+        this.scene.add(pondGroup);
+        return pondGroup;
+    }
+
+    createFish(x, y, z) {
+        // Fish body (ellipse shape)
+        const fishGeometry = new THREE.SphereGeometry(0.2, 8, 6);
+        fishGeometry.scale(1.5, 0.6, 0.8);
+        const fishMaterial = new THREE.MeshStandardMaterial({ 
+            color: 0x4169E1,
+            roughness: 0.3,
+            metalness: 0.2
+        });
+        const fishMesh = new THREE.Mesh(fishGeometry, fishMaterial);
+
+        // Fish tail
+        const tailGeometry = new THREE.ConeGeometry(0.15, 0.3, 6);
+        const tailMaterial = new THREE.MeshStandardMaterial({ color: 0x1E3A8A });
+        const tail = new THREE.Mesh(tailGeometry, tailMaterial);
+        tail.position.set(-0.3, 0, 0);
+        tail.rotation.z = Math.PI / 2;
+
+        const fishGroup = new THREE.Group();
+        fishGroup.add(fishMesh);
+        fishGroup.add(tail);
+        fishGroup.position.set(x, y, z);
+
+        // Fish properties
+        fishGroup.userData = {
+            type: 'fish',
+            speed: 0.5 + Math.random() * 0.5,
+            direction: Math.random() * Math.PI * 2,
+            targetDirection: Math.random() * Math.PI * 2,
+            changeDirectionTimer: 0,
+            changeDirectionInterval: 2 + Math.random() * 3,
+            isNibbling: false,
+            nibbleTimer: 0,
+            facingBobbler: false
+        };
+
+        this.scene.add(fishGroup);
+        return fishGroup;
+    }
 }
 

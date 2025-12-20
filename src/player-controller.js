@@ -13,7 +13,7 @@ export class PlayerController {
         this.rotationSpeed = 0.1;
     }
 
-    setupControls(onInteraction, onToggleInventory) {
+    setupControls(onInteraction, onToggleInventory, onFishing) {
         document.addEventListener('keydown', (event) => {
             this.keys[event.code] = true;
             
@@ -25,6 +25,11 @@ export class PlayerController {
             // Toggle inventory (I)
             if (event.code === 'KeyI') {
                 if (onToggleInventory) onToggleInventory();
+            }
+
+            // Fishing key (F)
+            if (event.code === 'KeyF') {
+                if (onFishing) onFishing();
             }
         });
 

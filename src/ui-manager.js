@@ -87,6 +87,8 @@ export class UIManager {
                 let iconHTML = '';
                 if (item.type === 'furniture') {
                     iconHTML = `<div class="item-icon" style="background: #8B4513; display: flex; align-items: center; justify-content: center; font-size: 20px;">${item.icon || '🪑'}</div>`;
+                } else if (item.type === 'fishing_rod') {
+                    iconHTML = `<div class="item-icon" style="background: #8B4513; display: flex; align-items: center; justify-content: center; font-size: 20px;">${item.icon || '🎣'}</div>`;
                 } else {
                     iconHTML = `<div class="item-icon" style="background: #ddd;"></div>`;
                 }
@@ -127,6 +129,10 @@ export class UIManager {
                     iconHTML = `<div class="item-icon" style="background-color: #${item.colorValue.toString(16).padStart(6, '0')}"></div>`;
                 } else if (item.type === 'furniture') {
                     iconHTML = `<div class="item-icon" style="background: #8B4513; display: flex; align-items: center; justify-content: center; font-size: 20px;">${item.icon || '🪑'}</div>`;
+                } else if (item.type === 'fishing_rod') {
+                    iconHTML = `<div class="item-icon" style="background: #8B4513; display: flex; align-items: center; justify-content: center; font-size: 20px;">${item.icon || '🎣'}</div>`;
+                } else if (item.type === 'fish') {
+                    iconHTML = `<div class="item-icon" style="background: #4169E1; display: flex; align-items: center; justify-content: center; font-size: 20px;">${item.icon || '🐟'}</div>`;
                 } else {
                     iconHTML = `<div class="item-icon" style="background: #ddd;"></div>`;
                 }
@@ -167,6 +173,10 @@ export class UIManager {
                     iconHTML = `<div class="item-icon" style="background-color: #${item.colorValue.toString(16).padStart(6, '0')}"></div>`;
                 } else if (item.type === 'furniture') {
                     iconHTML = `<div class="item-icon" style="background: #8B4513; display: flex; align-items: center; justify-content: center; font-size: 20px;">${item.icon || '🪑'}</div>`;
+                } else if (item.type === 'fishing_rod') {
+                    iconHTML = `<div class="item-icon" style="background: #8B4513; display: flex; align-items: center; justify-content: center; font-size: 20px;">${item.icon || '🎣'}</div>`;
+                } else if (item.type === 'fish') {
+                    iconHTML = `<div class="item-icon" style="background: #4169E1; display: flex; align-items: center; justify-content: center; font-size: 20px;">${item.icon || '🐟'}</div>`;
                 } else {
                     iconHTML = `<div class="item-icon" style="background: #ddd;"></div>`;
                 }
@@ -215,12 +225,17 @@ export class UIManager {
         }
     }
 
-    updateInteractionPrompt(text) {
+    updateInteractionPrompt(text, urgent = false) {
         if (!this.elements.interactionPrompt) return;
         
         if (text) {
             this.elements.interactionPrompt.textContent = text;
             this.elements.interactionPrompt.style.display = 'block';
+            if (urgent) {
+                this.elements.interactionPrompt.style.background = 'rgba(255, 0, 0, 0.9)';
+            } else {
+                this.elements.interactionPrompt.style.background = 'rgba(0, 0, 0, 0.8)';
+            }
         } else {
             this.elements.interactionPrompt.style.display = 'none';
         }

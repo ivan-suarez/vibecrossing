@@ -6,6 +6,7 @@ import { UIManager } from './ui-manager.js';
 import { PlayerController } from './player-controller.js';
 import { InteractionManager } from './interaction-manager.js';
 import { SceneManager } from './scene-manager.js';
+import { FishingManager } from './fishing-manager.js';
 
 /**
  * Game class orchestrates all game systems
@@ -20,10 +21,14 @@ export class Game {
         this.uiManager = null;
         this.playerController = null;
         this.interactionManager = null;
+        this.fishingManager = null;
         this.player = null;
         this.money = 0;
         this.flowers = [];
+        this.fish = [];
+        this.pond = null;
         this.shopObject = null;
+        this.clock = new THREE.Clock();
     }
 
     init() {
@@ -49,11 +54,13 @@ export class Game {
             this.sceneManager.getCamera()
         );
         this.interactionManager = new InteractionManager(this.sceneManager.getScene());
+        this.fishingManager = new FishingManager(this.sceneManager.getScene());
 
         // Setup controls
         this.playerController.setupControls(
             () => this.handleInteraction(),
-            () => this.uiManager.toggleInventory()
+            () => this.uiManager.toggleInventory(),
+            () => this.handleFishingInput()
         );
 
         // Setup UI
@@ -90,6 +97,31 @@ export class Game {
 
         // Create shop
         this.shopObject = this.world.createShop(-10, 0, 0);
+
+        // Create pond
+        this.pond = this.world.createPond(10, 0, 10);
+
+        // Spawn fish
+        this.spawnFish(5);
+    }
+
+    spawnFish(count) {
+        if (!this.pond) return;
+
+        const pondCenter = this.pond.userData.center;
+        const pondRadius = this.pond.userData.radius;
+
+        for (let i = 0; i < count; i++) {
+            // Random position within pond
+            const angle = Math.random() * Math.PI * 2;
+            const distance = Math.random() * (pondRadius - 0.5);
+            const x = pondCenter.x + Math.cos(angle) * distance;
+            const z = pondCenter.z + Math.sin(angle) * distance;
+            const y = 0.3; // Just below water surface
+
+            const fish = this.world.createFish(x, y, z);
+            this.fish.push(fish);
+        }
     }
 
     handleInteraction() {
@@ -193,6 +225,12 @@ export class Game {
         const item = this.inventory.getItem(itemIndex);
         if (!item) return;
 
+        // Don't allow placing fishing rods or fish
+        if (item.type === 'fishing_rod' || item.type === 'fish') {
+            this.uiManager.showNotification('Cannot place this item!');
+            return;
+        }
+
         // Calculate position in front of player
         const placePos = this.playerController.calculatePlacePosition(2);
         if (!placePos) return;
@@ -225,6 +263,134 @@ export class Game {
             this.inventory.removeItem(itemIndex);
             this.updateAllUI();
             this.uiManager.showNotification(`Placed ${item.name}!`);
+        }
+    }
+
+    handleFishingInput() {
+        if (this.fishingManager.isFishing) {
+            // Try to catch fish
+            const result = this.fishingManager.tryCatch();
+            if (result.success) {
+                // Remove fish from array
+                if (result.fish) {
+                    const index = this.fish.indexOf(result.fish);
+                    if (index > -1) {
+                        this.fish.splice(index, 1);
+                    }
+                }
+                this.inventory.addItem(result.item);
+                this.updateAllUI();
+                this.uiManager.showNotification(result.message);
+                // Spawn new fish after a delay
+                setTimeout(() => {
+                    if (this.pond) {
+                        this.spawnFish(1);
+                    }
+                }, 3000);
+            } else if (result.message) {
+                // Remove fish from array if it got away
+                if (result.fish) {
+                    const index = this.fish.indexOf(result.fish);
+                    if (index > -1) {
+                        this.fish.splice(index, 1);
+                    }
+                }
+                this.uiManager.showNotification(result.message);
+                // Spawn new fish after a delay if fish got away
+                if (result.message.includes('got away')) {
+                    setTimeout(() => {
+                        if (this.pond) {
+                            this.spawnFish(1);
+                        }
+                    }, 3000);
+                }
+            }
+        } else {
+            // Start fishing (check if player has fishing rod and is near pond)
+            if (!this.hasFishingRod()) {
+                this.uiManager.showNotification('You need a fishing rod!');
+                return;
+            }
+            
+            if (!this.isNearPond()) {
+                this.uiManager.showNotification('You need to be near the pond!');
+                return;
+            }
+
+            const result = this.fishingManager.startFishing(this.player, this.pond);
+            if (result.success) {
+                this.uiManager.showNotification(result.message);
+            } else {
+                this.uiManager.showNotification(result.message);
+            }
+        }
+    }
+
+    hasFishingRod() {
+        return this.inventory.getAllItems().some(item => item.type === 'fishing_rod');
+    }
+
+    isNearPond() {
+        if (!this.pond || !this.player) return false;
+        const pondCenter = this.pond.userData.center;
+        const distance = this.player.position.distanceTo(pondCenter);
+        return distance < 6; // Within casting distance
+    }
+
+    updateFish(delta) {
+        if (!this.pond) return;
+
+        const pondCenter = this.pond.userData.center;
+        const pondRadius = this.pond.userData.radius;
+
+        for (const fish of this.fish) {
+            const fishData = fish.userData;
+
+            // Skip if fish is interacting with bobbler
+            if (fishData.facingBobbler) {
+                continue;
+            }
+
+            // Update direction change timer
+            fishData.changeDirectionTimer += delta;
+            if (fishData.changeDirectionTimer >= fishData.changeDirectionInterval) {
+                fishData.targetDirection = Math.random() * Math.PI * 2;
+                fishData.changeDirectionTimer = 0;
+                fishData.changeDirectionInterval = 2 + Math.random() * 3;
+            }
+
+            // Smoothly rotate towards target direction
+            let angleDiff = fishData.targetDirection - fishData.direction;
+            while (angleDiff > Math.PI) angleDiff -= 2 * Math.PI;
+            while (angleDiff < -Math.PI) angleDiff += 2 * Math.PI;
+            fishData.direction += angleDiff * 0.1;
+
+            // Move fish
+            const moveX = Math.sin(fishData.direction) * fishData.speed * delta;
+            const moveZ = Math.cos(fishData.direction) * fishData.speed * delta;
+
+            fish.position.x += moveX;
+            fish.position.z += moveZ;
+
+            // Keep fish within pond bounds - clamp position if outside
+            const distanceFromCenter = fish.position.distanceTo(pondCenter);
+            const maxDistance = pondRadius - 0.5;
+            
+            if (distanceFromCenter > maxDistance) {
+                // Clamp fish position back inside pond
+                const angleToCenter = Math.atan2(
+                    fish.position.z - pondCenter.z,
+                    fish.position.x - pondCenter.x
+                );
+                
+                fish.position.x = pondCenter.x + Math.cos(angleToCenter) * maxDistance;
+                fish.position.z = pondCenter.z + Math.sin(angleToCenter) * maxDistance;
+                
+                // Bounce off edge by reversing direction
+                fishData.direction = angleToCenter + Math.PI;
+            }
+
+            fish.rotation.y = fishData.direction;
         }
     }
 
@@ -266,8 +432,32 @@ export class Game {
     }
 
     updatePlayer() {
+        const delta = this.clock.getDelta();
+
+        // Don't allow movement while fishing
+        if (this.fishingManager.isFishing) {
+            // Update camera to follow player (but don't move)
+            this.playerController.updateCamera();
+            // Update fishing
+            this.fishingManager.update(this.player, this.fish, delta);
+            // Update fish
+            this.updateFish(delta);
+            // Update fishing status prompt
+            const fishingStatus = this.fishingManager.getStatus();
+            if (fishingStatus) {
+                this.uiManager.updateInteractionPrompt(fishingStatus.text, fishingStatus.urgent);
+            }
+            return;
+        }
+
         // Update player movement
         this.playerController.update();
+
+        // Update fish
+        this.updateFish(delta);
+
+        // Update fishing
+        this.fishingManager.update(this.player, this.fish, delta);
 
         // Check for interactions
         this.interactionManager.checkInteractions(
@@ -278,7 +468,13 @@ export class Game {
         );
 
         // Update interaction prompt
-        const promptText = this.interactionManager.getInteractionPrompt();
+        let promptText = this.interactionManager.getInteractionPrompt();
+        
+        // Check if near pond and has fishing rod
+        if (!promptText && this.isNearPond() && this.hasFishingRod()) {
+            promptText = 'Press F to start fishing';
+        }
+        
         this.uiManager.updateInteractionPrompt(promptText);
     }
 
@@ -288,3 +484,4 @@ export class Game {
         this.sceneManager.render();
     }
 }
+
