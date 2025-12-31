@@ -117,7 +117,7 @@ export class Game {
             const distance = Math.random() * (pondRadius - 0.5);
             const x = pondCenter.x + Math.cos(angle) * distance;
             const z = pondCenter.z + Math.sin(angle) * distance;
-            const y = 0.3; // Just below water surface
+            const y = 0.4; // Near water surface (water is at 0.5)
 
             const fish = this.world.createFish(x, y, z);
             this.fish.push(fish);
@@ -371,6 +371,9 @@ export class Game {
 
             fish.position.x += moveX;
             fish.position.z += moveZ;
+            
+            // Keep fish at proper depth (near water surface)
+            fish.position.y = 0.4;
 
             // Keep fish within pond bounds - clamp position if outside
             const distanceFromCenter = fish.position.distanceTo(pondCenter);

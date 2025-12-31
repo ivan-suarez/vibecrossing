@@ -423,13 +423,14 @@ export class World {
     }
 
     createFish(x, y, z) {
-        // Fish body (ellipse shape)
-        const fishGeometry = new THREE.SphereGeometry(0.2, 8, 6);
+        // Fish body (ellipse shape) - made slightly larger and more visible
+        const fishGeometry = new THREE.SphereGeometry(0.25, 8, 6);
         fishGeometry.scale(1.5, 0.6, 0.8);
         const fishMaterial = new THREE.MeshStandardMaterial({ 
-            color: 0x4169E1,
+            color: 0x1E3A8A, // Darker blue for better visibility
             roughness: 0.3,
-            metalness: 0.2
+            metalness: 0.2,
+            emissive: 0x000033 // Slight glow to make them more visible
         });
         const fishMesh = new THREE.Mesh(fishGeometry, fishMaterial);
 
